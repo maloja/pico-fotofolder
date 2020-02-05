@@ -1,0 +1,26 @@
+{
+    "name": "maloja/pico-fotofolder",
+    "type": "pico-plugin",
+    "description": "A masonry like gallery for Pico CMS",
+    "keywords": [ "pico", "picocms", "picocms-plugin", "pico-fotofolder", "gallery" ],
+    "homepage": "https://github.com/maloja/pico-fotofolder",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Maloja",
+            "homepage": "https://github.com/maloja/pico-fotofolder",
+            "role": "Lead Developer"
+        }
+    ],
+    "support": {
+        "docs": "http://picocms.org/docs/pico-http-params/",
+        "issues": "https://github.com/maloja/pico-fotofolder/issues",
+        "source": "https://github.com/maloja/pico-fotofolder"
+    },
+    "require": {
+        "php": ">=5.3.6"
+    },
+    "autoload": {
+        "classmap": [ "PicoFotofolder.php" ]
+    }
+}
