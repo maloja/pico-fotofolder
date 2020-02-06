@@ -160,7 +160,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
         $out = '<div class="mgrid baguette_' . $this->p_count . '">' . "\n";
         foreach ($img_metas as $pic) {
             $out .= "    <a href=\"{$pic['url']}\" class=\"mgrid-item {$pic['format']}\"> \n";
-            $out .= "       <img class=\"lazy\" data-src=\"{$pic['thumb_url']}\" src=\"#\" alt=\" \">\n";
+            $out .= "       <img class=\"lazy\" data-src=\"{$pic['thumb_url']}\" src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 14'%3E%3C/svg%3E\" alt=\" \">\n";
             $out .= "       <div class=\"zoomicon\" style=\"background-image: url('{$this->getConfig('plugins_url')}PicoFotofolder/assets/circleplus.png')\"> </div> \n";
             $out .= '    </a>' . "\n";
         }
