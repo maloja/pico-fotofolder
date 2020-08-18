@@ -25,29 +25,44 @@ class PicoFotofolder extends AbstractPicoPlugin {
      *
      * Triggered after Pico has prepared the raw file contents for parsing
      */
-    public function onContentParsed(&$content) {
-        $content = preg_replace_callback( '/<p>\s*\(%\s+' . $this->p_keyword  .'\s*\(\s*(.*?)\s*\)\s+%\)\s*<\/p>/', function($match) {
+    public function onContentLoaded(&$rawContent) {
+        $rawContent = preg_replace_callback( '/\(%\s+' . $this->p_keyword  .'\s*\(\s*(.*?)\s*\)\s+%\)/', function($match) {
 
             if ($match[1]) {
-                list ($this->image_src['path'],
-                      $this->image_src['sort'],
-                      $this->image_src['order']) = explode(',', str_replace('"', '', $match[1]));
 
-                $this->image_src['path']  = trim($this->image_src['path']);
-                $this->image_src['sort']  = trim($this->image_src['sort']);
-                $this->image_src['order']  = trim($this->image_src['order']);
-                if ($this->image_src['sort'] == "") $this->image_src['sort'] = 'name';
-                if ($this->image_src['order'] == "") $this->image_src['order'] = 'dsc';
+                //check for GD library see #1
+                if (!(extension_loaded('gd')) | (!function_exists('gd_info'))) {
+                    $out = 'Error: No GD support found. Make sure php-gd is installed.';
+                }
+                else {
+                    list ($this->image_src['path'],
+                          $this->image_src['sort'],
+                          $this->image_src['order']) = explode(',', str_replace('"', '', $match[1]));
 
-				$img_metas = $this->readMetaArray();
+                    $this->image_src['path']  = trim($this->image_src['path']);
+                    $this->image_src['sort']  = trim($this->image_src['sort']);
+                    $this->image_src['order']  = trim($this->image_src['order']);
+                    if ($this->image_src['sort'] == "") $this->image_src['sort'] = 'name';
+                    if ($this->image_src['order'] == "") $this->image_src['order'] = 'dsc';
 
-				if (count($img_metas) > 0) {
-                    $out = $this->createOutput($img_metas);
-                    $this->p_count++;
+    				// handle image path if %assets_url% is used see #1
+                    $this->image_src['path'] = preg_replace('/%assets_url%/', rtrim($this->getConfig('assets_url'), "/"), $this->image_src['path']);
+                    $repl = '/http[s]?:\/\/' . $_SERVER['SERVER_NAME'] . '/';
+                    $this->image_src['path'] = preg_replace($repl, '', $this->image_src['path']);
+
+    				$img_metas = $this->readMetaArray();
+
+    				if (count($img_metas) > 0) {
+                        $out = $this->createOutput($img_metas);
+                        $this->p_count++;
+                    }
+                    else {
+                        $out = "no media found in: {$this->image_src['path']}";
+                    }
                 }
             }
             return $out;
-        }, $content);
+        }, $rawContent);
     }
 
 
@@ -85,6 +100,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
 	/***************************************************************/
 	private function readMetaArray() {
         $dir = $_SERVER['DOCUMENT_ROOT'] . $this->image_src['path'];
+
         $img_metas = array();
         $pattern = '{,.}*.{[jJ][pP][gG],[jJ][pP][eE][gG],[pP][nN][gG],[gG][iI][fF],dat}';
         $filelist = glob($dir . '/' . $pattern, GLOB_BRACE);
