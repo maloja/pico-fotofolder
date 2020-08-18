@@ -1,116 +1,117 @@
 const runningOnBrowser = typeof window !== "undefined";
 
 const isBot =
-	(runningOnBrowser && !("onscroll" in window)) ||
-	(typeof navigator !== "undefined" &&
-		/(gle|ing|ro)bot|crawl|spider/i.test(navigator.userAgent));
+    (runningOnBrowser && !("onscroll" in window)) ||
+    (typeof navigator !== "undefined" && /(gle|ing|ro)bot|crawl|spider/i.test(navigator.userAgent));
 
-const supportsIntersectionObserver =
-	runningOnBrowser && "IntersectionObserver" in window;
+const supportsIntersectionObserver = runningOnBrowser && "IntersectionObserver" in window;
 
-const supportsClassList =
-	runningOnBrowser && "classList" in document.createElement("p");
+const supportsClassList = runningOnBrowser && "classList" in document.createElement("p");
+
+const isHiDpi = runningOnBrowser && window.devicePixelRatio > 1;
 
 const defaultSettings = {
-	elements_selector: "img",
-	container: isBot || runningOnBrowser ? document : null,
-	threshold: 300,
-	thresholds: null,
-	data_src: "src",
-	data_srcset: "srcset",
-	data_sizes: "sizes",
-	data_bg: "bg",
-	data_poster: "poster",
-	class_loading: "loading",
-	class_loaded: "loaded",
-	class_error: "error",
-	load_delay: 0,
-	auto_unobserve: true,
-	callback_enter: null,
-	callback_exit: null,
-	callback_reveal: null,
-	callback_loaded: null,
-	callback_error: null,
-	callback_finish: null,
-	use_native: false
+    elements_selector: ".lazy",
+    container: isBot || runningOnBrowser ? document : null,
+    threshold: 300,
+    thresholds: null,
+    data_src: "src",
+    data_srcset: "srcset",
+    data_sizes: "sizes",
+    data_bg: "bg",
+    data_bg_hidpi: "bg-hidpi",
+    data_bg_multi: "bg-multi",
+    data_bg_multi_hidpi: "bg-multi-hidpi",
+    data_poster: "poster",
+    class_applied: "applied",
+    class_loading: "loading",
+    class_loaded: "loaded",
+    class_error: "error",
+    unobserve_completed: true,
+    unobserve_entered: false,
+    cancel_on_exit: true,
+    callback_enter: null,
+    callback_exit: null,
+    callback_applied: null,
+    callback_loading: null,
+    callback_loaded: null,
+    callback_error: null,
+    callback_finish: null,
+    callback_cancel: null,
+    use_native: false
 };
 
-var getInstanceSettings = customSettings => {
-	return Object.assign({}, defaultSettings, customSettings);
+const getExtendedSettings = (customSettings) => {
+    return Object.assign({}, defaultSettings, customSettings);
 };
 
 /* Creates instance and notifies it through the window element */
 const createInstance = function(classObj, options) {
-	var event;
-	let eventString = "LazyLoad::Initialized";
-	let instance = new classObj(options);
-	try {
-		// Works in modern browsers
-		event = new CustomEvent(eventString, { detail: { instance } });
-	} catch (err) {
-		// Works in Internet Explorer (all versions)
-		event = document.createEvent("CustomEvent");
-		event.initCustomEvent(eventString, false, false, { instance });
-	}
-	window.dispatchEvent(event);
+    var event;
+    let eventString = "LazyLoad::Initialized";
+    let instance = new classObj(options);
+    try {
+        // Works in modern browsers
+        event = new CustomEvent(eventString, { detail: { instance } });
+    } catch (err) {
+        // Works in Internet Explorer (all versions)
+        event = document.createEvent("CustomEvent");
+        event.initCustomEvent(eventString, false, false, { instance });
+    }
+    window.dispatchEvent(event);
 };
 
 /* Auto initialization of one or more instances of lazyload, depending on the 
     options passed in (plain object or an array) */
-function autoInitialize(classObj, options) {
-	if (!options) {
-		return;
-	}
-	if (!options.length) {
-		// Plain object
-		createInstance(classObj, options);
-	} else {
-		// Array of objects
-		for (let i = 0, optionsItem; (optionsItem = options[i]); i += 1) {
-			createInstance(classObj, optionsItem);
-		}
-	}
-}
+const autoInitialize = (classObj, options) => {
+    if (!options) {
+        return;
+    }
+    if (!options.length) {
+        // Plain object
+        createInstance(classObj, options);
+    } else {
+        // Array of objects
+        for (let i = 0, optionsItem; (optionsItem = options[i]); i += 1) {
+            createInstance(classObj, optionsItem);
+        }
+    }
+};
+
+const statusLoading = "loading";
+const statusLoaded = "loaded";
+const statusApplied = "applied";
+const statusEntered = "entered";
+const statusError = "error";
+const statusNative = "native";
 
 const dataPrefix = "data-";
-const processedDataName = "was-processed";
-const timeoutDataName = "ll-timeout";
-const trueString = "true";
+const statusDataName = "ll-status";
 
 const getData = (element, attribute) => {
-	return element.getAttribute(dataPrefix + attribute);
+    return element.getAttribute(dataPrefix + attribute);
 };
 
 const setData = (element, attribute, value) => {
-	var attrName = dataPrefix + attribute;
-	if (value === null) {
-		element.removeAttribute(attrName);
-		return;
-	}
-	element.setAttribute(attrName, value);
+    var attrName = dataPrefix + attribute;
+    if (value === null) {
+        element.removeAttribute(attrName);
+        return;
+    }
+    element.setAttribute(attrName, value);
 };
 
-const resetWasProcessedData = element =>
-	setData(element, processedDataName, null);
+const getStatus = (element) => getData(element, statusDataName);
+const setStatus = (element, status) => setData(element, statusDataName, status);
+const resetStatus = (element) => setStatus(element, null);
 
-const setWasProcessedData = element =>
-	setData(element, processedDataName, trueString);
+const hasEmptyStatus = (element) => getStatus(element) === null;
+const hasStatusLoading = (element) => getStatus(element) === statusLoading;
+const hasStatusError = (element) => getStatus(element) === statusError;
+const hasStatusNative = (element) => getStatus(element) === statusNative;
 
-const getWasProcessedData = element =>
-	getData(element, processedDataName) === trueString;
-
-const setTimeoutData = (element, value) =>
-	setData(element, timeoutDataName, value);
-
-const getTimeoutData = element => getData(element, timeoutDataName);
-
-const purgeProcessedElements = elements => {
-	return elements.filter(element => !getWasProcessedData(element));
-};
-
-const purgeOneElement = (elements, elementToPurge) => {
-	return elements.filter(element => element !== elementToPurge);
-};
+const statusesAfterLoading = [statusLoading, statusLoaded, statusApplied, statusError];
+const hadStartedLoading = (element) => (statusesAfterLoading.indexOf(getStatus(element)) >= 0);
 
 const safeCallback = (callback, arg1, arg2, arg3) => {
 	if (!callback) {
@@ -126,111 +127,6 @@ const safeCallback = (callback, arg1, arg2, arg3) => {
 		return;
 	}
 	callback(arg1);
-};
-
-const updateLoadingCount = (instance, plusMinus) => {
-	instance._loadingCount += plusMinus;
-	if (instance._elements.length === 0 && instance._loadingCount === 0) {
-		safeCallback(instance._settings.callback_finish, instance);
-	}
-};
-
-const getSourceTags = parentTag => {
-	let sourceTags = [];
-	for (let i = 0, childTag; (childTag = parentTag.children[i]); i += 1) {
-		if (childTag.tagName === "SOURCE") {
-			sourceTags.push(childTag);
-		}
-	}
-	return sourceTags;
-};
-
-const setAttributeIfValue = (element, attrName, value) => {
-	if (!value) {
-		return;
-	}
-	element.setAttribute(attrName, value);
-};
-
-const setImageAttributes = (element, settings) => {
-	setAttributeIfValue(
-		element,
-		"sizes",
-		getData(element, settings.data_sizes)
-	);
-	setAttributeIfValue(
-		element,
-		"srcset",
-		getData(element, settings.data_srcset)
-	);
-	setAttributeIfValue(element, "src", getData(element, settings.data_src));
-};
-
-const setSourcesImg = (element, settings) => {
-	const parent = element.parentNode;
-
-	if (parent && parent.tagName === "PICTURE") {
-		let sourceTags = getSourceTags(parent);
-		sourceTags.forEach(sourceTag => {
-			setImageAttributes(sourceTag, settings);
-		});
-	}
-
-	setImageAttributes(element, settings);
-};
-
-const setSourcesIframe = (element, settings) => {
-	setAttributeIfValue(element, "src", getData(element, settings.data_src));
-};
-
-const setSourcesVideo = (element, settings) => {
-	let sourceTags = getSourceTags(element);
-	sourceTags.forEach(sourceTag => {
-		setAttributeIfValue(
-			sourceTag,
-			"src",
-			getData(sourceTag, settings.data_src)
-		);
-	});
-	setAttributeIfValue(
-		element,
-		"poster",
-		getData(element, settings.data_poster)
-	);
-	setAttributeIfValue(element, "src", getData(element, settings.data_src));
-	element.load();
-};
-
-const setSourcesBgImage = (element, settings) => {
-	const srcDataValue = getData(element, settings.data_src);
-	const bgDataValue = getData(element, settings.data_bg);
-
-	if (srcDataValue) {
-		element.style.backgroundImage = `url("${srcDataValue}")`;
-	}
-
-	if (bgDataValue) {
-		element.style.backgroundImage = bgDataValue;
-	}
-};
-
-const setSourcesFunctions = {
-	IMG: setSourcesImg,
-	IFRAME: setSourcesIframe,
-	VIDEO: setSourcesVideo
-};
-
-const setSources = (element, instance) => {
-	const settings = instance._settings;
-	const tagName = element.tagName;
-	const setSourcesFunction = setSourcesFunctions[tagName];
-	if (setSourcesFunction) {
-		setSourcesFunction(element, settings);
-		updateLoadingCount(instance, 1);
-		instance._elements = purgeOneElement(instance._elements, element);
-		return;
-	}
-	setSourcesBgImage(element, settings);
 };
 
 const addClass = (element, className) => {
@@ -252,239 +148,552 @@ const removeClass = (element, className) => {
 		replace(/\s+$/, "");
 };
 
-const genericLoadEventName = "load";
-const mediaLoadEventName = "loadeddata";
-const errorEventName = "error";
+const addTempImage = (element) => {
+    element.llTempImage = document.createElement("IMG");
+};
+
+const deleteTempImage = (element) => {
+    delete element.llTempImage;
+};
+
+const getTempImage = (element) => element.llTempImage;
+
+const unobserve = (element, instance) => {
+    if (!instance) return;
+    const observer = instance._observer;
+    if (!observer) return;
+    observer.unobserve(element);
+};
+
+const resetObserver = (observer) => {
+    observer.disconnect();
+};
+
+const unobserveEntered = (element, settings, instance) => {
+    if (settings.unobserve_entered) unobserve(element, instance);
+};
+
+const updateLoadingCount = (instance, delta) => {
+    if (!instance) return;
+    instance.loadingCount += delta;
+};
+
+const decreaseToLoadCount = (instance) => {
+    if (!instance) return;
+    instance.toLoadCount -= 1;
+};
+
+const setToLoadCount = (instance, value) => {
+    if (!instance) return;
+    instance.toLoadCount = value;
+};
+
+const isSomethingLoading = (instance) => instance.loadingCount > 0;
+
+const haveElementsToLoad = (instance) => instance.toLoadCount > 0;
+
+const getSourceTags = (parentTag) => {
+    let sourceTags = [];
+    for (let i = 0, childTag; (childTag = parentTag.children[i]); i += 1) {
+        if (childTag.tagName === "SOURCE") {
+            sourceTags.push(childTag);
+        }
+    }
+    return sourceTags;
+};
+
+const setAttributeIfValue = (element, attrName, value) => {
+    if (!value) {
+        return;
+    }
+    element.setAttribute(attrName, value);
+};
+
+const resetAttribute = (element, attrName) => {
+    element.removeAttribute(attrName);
+};
+
+const hasOriginalAttributes = (element) => {
+    return !!element.llOriginalAttrs;
+};
+
+const saveOriginalImageAttributes = (element) => {
+    if (hasOriginalAttributes(element)) {
+        return;
+    }
+    const originalAttributes = {};
+    originalAttributes["src"] = element.getAttribute("src");
+    originalAttributes["srcset"] = element.getAttribute("srcset");
+    originalAttributes["sizes"] = element.getAttribute("sizes");
+    element.llOriginalAttrs = originalAttributes;
+};
+
+const restoreOriginalImageAttributes = (element) => {
+    if (!hasOriginalAttributes(element)) {
+        return;
+    }
+    const originalAttributes = element.llOriginalAttrs;
+    setAttributeIfValue(element, "src", originalAttributes["src"]);
+    setAttributeIfValue(element, "srcset", originalAttributes["srcset"]);
+    setAttributeIfValue(element, "sizes", originalAttributes["sizes"]);
+};
+
+const setImageAttributes = (element, settings) => {
+    setAttributeIfValue(element, "sizes", getData(element, settings.data_sizes));
+    setAttributeIfValue(element, "srcset", getData(element, settings.data_srcset));
+    setAttributeIfValue(element, "src", getData(element, settings.data_src));
+};
+
+const resetImageAttributes = (element) => {
+    resetAttribute(element, "src");
+    resetAttribute(element, "srcset");
+    resetAttribute(element, "sizes");
+};
+
+const forEachPictureSource = (element, fn) => {
+    const parent = element.parentNode;
+    if (!parent || parent.tagName !== "PICTURE") {
+        return;
+    }
+    let sourceTags = getSourceTags(parent);
+    sourceTags.forEach(fn);
+};
+
+const forEachVideoSource = (element, fn) => {
+    let sourceTags = getSourceTags(element);
+    sourceTags.forEach(fn);
+};
+
+const restoreOriginalAttributesImg = (element) => {
+    forEachPictureSource(element, (sourceTag) => {
+        restoreOriginalImageAttributes(sourceTag);
+    });
+    restoreOriginalImageAttributes(element);
+};
+
+const setSourcesImg = (element, settings) => {
+    forEachPictureSource(element, (sourceTag) => {
+        saveOriginalImageAttributes(sourceTag);
+        setImageAttributes(sourceTag, settings);
+    });
+    saveOriginalImageAttributes(element);
+    setImageAttributes(element, settings);
+};
+
+const resetSourcesImg = (element) => {
+    forEachPictureSource(element, (sourceTag) => {
+        resetImageAttributes(sourceTag);
+    });
+    resetImageAttributes(element);
+};
+
+const setSourcesIframe = (element, settings) => {
+    setAttributeIfValue(element, "src", getData(element, settings.data_src));
+};
+
+const setSourcesVideo = (element, settings) => {
+    forEachVideoSource(element, (sourceTag) => {
+        setAttributeIfValue(sourceTag, "src", getData(sourceTag, settings.data_src));
+    });
+    setAttributeIfValue(element, "poster", getData(element, settings.data_poster));
+    setAttributeIfValue(element, "src", getData(element, settings.data_src));
+    element.load();
+};
+
+const setSourcesFunctions = {
+    IMG: setSourcesImg,
+    IFRAME: setSourcesIframe,
+    VIDEO: setSourcesVideo
+};
+
+const setBackground = (element, settings, instance) => {
+    const bg1xValue = getData(element, settings.data_bg);
+    const bgHiDpiValue = getData(element, settings.data_bg_hidpi);
+    const bgDataValue = isHiDpi && bgHiDpiValue ? bgHiDpiValue : bg1xValue;
+    if (!bgDataValue) return;
+    element.style.backgroundImage = `url("${bgDataValue}")`;
+    getTempImage(element).setAttribute("src", bgDataValue);
+    manageLoading(element, settings, instance);
+};
+
+// NOTE: THE TEMP IMAGE TRICK CANNOT BE DONE WITH data-multi-bg
+// BECAUSE INSIDE ITS VALUES MUST BE WRAPPED WITH URL() AND ONE OF THEM
+// COULD BE A GRADIENT BACKGROUND IMAGE
+const setMultiBackground = (element, settings, instance) => {
+    const bg1xValue = getData(element, settings.data_bg_multi);
+    const bgHiDpiValue = getData(element, settings.data_bg_multi_hidpi);
+    const bgDataValue = isHiDpi && bgHiDpiValue ? bgHiDpiValue : bg1xValue;
+    if (!bgDataValue) {
+        return;
+    }
+    element.style.backgroundImage = bgDataValue;
+    manageApplied(element, settings, instance);
+};
+
+const setSources = (element, settings) => {
+    const setSourcesFunction = setSourcesFunctions[element.tagName];
+    if (!setSourcesFunction) {
+        return;
+    }
+    setSourcesFunction(element, settings);
+};
+
+const manageApplied = (element, settings, instance) => {
+    addClass(element, settings.class_applied);
+    setStatus(element, statusApplied);
+    removeDataMultiBackground(element, settings);
+    if (settings.unobserve_completed) {
+        // Unobserve now because we can't do it on load
+        unobserve(element, settings);
+    }
+    safeCallback(settings.callback_applied, element, instance);
+};
+
+const manageLoading = (element, settings, instance) => {
+    updateLoadingCount(instance, +1);
+    addClass(element, settings.class_loading);
+    setStatus(element, statusLoading);
+    safeCallback(settings.callback_loading, element, instance);
+};
+
+// REMOVE DATA ATTRIBUTES --------------
+
+const removeDataImg = (element, settings) => {
+    setData(element, settings.data_src, null);
+    setData(element, settings.data_srcset, null);
+    setData(element, settings.data_sizes, null);
+    forEachPictureSource(element, (sourceTag) => {
+        setData(sourceTag, settings.data_srcset, null);
+        setData(sourceTag, settings.data_sizes, null);
+    });
+};
+
+const removeDataIframe = (element, settings) => {
+    setData(element, settings.data_src, null);
+};
+
+const removeDataVideo = (element, settings) => {
+    setData(element, settings.data_src, null);
+    setData(element, settings.data_poster, null);
+    forEachVideoSource(element, (sourceTag) => {
+        setData(sourceTag, settings.data_src, null);
+    });
+};
+
+const removeDataFunctions = {
+    IMG: removeDataImg,
+    IFRAME: removeDataIframe,
+    VIDEO: removeDataVideo
+};
+
+const removeDataBackground = (element, settings) => {
+    setData(element, settings.data_bg, null);
+    setData(element, settings.data_bg_hidpi, null);
+};
+
+const removeDataMultiBackground = (element, settings) => {
+    setData(element, settings.data_bg_multi, null);
+    setData(element, settings.data_bg_multi_hidpi, null);
+};
+
+const removeDataAttributes = (element, settings) => {
+    const removeDataFunction = removeDataFunctions[element.tagName];
+    if (removeDataFunction) {
+        removeDataFunction(element, settings);
+        return;
+    }
+    removeDataBackground(element, settings);
+};
+
+const elementsWithLoadEvent = ["IMG", "IFRAME", "VIDEO"];
+const hasLoadEvent = (element) => elementsWithLoadEvent.indexOf(element.tagName) > -1;
+
+const checkFinish = (settings, instance) => {
+    if (instance && !isSomethingLoading(instance) && !haveElementsToLoad(instance)) {
+        safeCallback(settings.callback_finish, instance);
+    }
+};
 
 const addEventListener = (element, eventName, handler) => {
-	element.addEventListener(eventName, handler);
+    element.addEventListener(eventName, handler);
+    element.llEvLisnrs[eventName] = handler;
 };
 
 const removeEventListener = (element, eventName, handler) => {
-	element.removeEventListener(eventName, handler);
+    element.removeEventListener(eventName, handler);
+};
+
+const hasEventListeners = (element) => {
+    return !!element.llEvLisnrs;
 };
 
 const addEventListeners = (element, loadHandler, errorHandler) => {
-	addEventListener(element, genericLoadEventName, loadHandler);
-	addEventListener(element, mediaLoadEventName, loadHandler);
-	addEventListener(element, errorEventName, errorHandler);
+    if (!hasEventListeners(element)) element.llEvLisnrs = {};
+    const loadEventName = element.tagName === "VIDEO" ? "loadeddata" : "load";
+    addEventListener(element, loadEventName, loadHandler);
+    addEventListener(element, "error", errorHandler);
 };
 
-const removeEventListeners = (element, loadHandler, errorHandler) => {
-	removeEventListener(element, genericLoadEventName, loadHandler);
-	removeEventListener(element, mediaLoadEventName, loadHandler);
-	removeEventListener(element, errorEventName, errorHandler);
+const removeEventListeners = (element) => {
+    if (!hasEventListeners(element)) {
+        return;
+    }
+    const eventListeners = element.llEvLisnrs;
+    for (let eventName in eventListeners) {
+        const handler = eventListeners[eventName];
+        removeEventListener(element, eventName, handler);
+    }
+    delete element.llEvLisnrs;
 };
 
-const eventHandler = function(event, success, instance) {
-	var settings = instance._settings;
-	const className = success ? settings.class_loaded : settings.class_error;
-	const callback = success
-		? settings.callback_loaded
-		: settings.callback_error;
-	const element = event.target;
-
-	removeClass(element, settings.class_loading);
-	addClass(element, className);
-	safeCallback(callback, element, instance);
-
-	updateLoadingCount(instance, -1);
+const doneHandler = (element, settings, instance) => {
+    deleteTempImage(element);
+    updateLoadingCount(instance, -1);
+    decreaseToLoadCount(instance);
+    removeClass(element, settings.class_loading);
+    if (settings.unobserve_completed) {
+        unobserve(element, instance);
+    }
 };
 
-const addOneShotEventListeners = (element, instance) => {
-	const loadHandler = event => {
-		eventHandler(event, true, instance);
-		removeEventListeners(element, loadHandler, errorHandler);
-	};
-	const errorHandler = event => {
-		eventHandler(event, false, instance);
-		removeEventListeners(element, loadHandler, errorHandler);
-	};
-	addEventListeners(element, loadHandler, errorHandler);
+const loadHandler = (event, element, settings, instance) => {
+    const goingNative = hasStatusNative(element);
+    doneHandler(element, settings, instance);
+    addClass(element, settings.class_loaded);
+    setStatus(element, statusLoaded);
+    removeDataAttributes(element, settings);
+    safeCallback(settings.callback_loaded, element, instance);
+    if (!goingNative) checkFinish(settings, instance);
 };
 
-const managedTags = ["IMG", "IFRAME", "VIDEO"];
-
-const onEnter = (element, entry, instance) => {
-	const settings = instance._settings;
-	safeCallback(settings.callback_enter, element, entry, instance);
-	if (!settings.load_delay) {
-		revealAndUnobserve(element, instance);
-		return;
-	}
-	delayLoad(element, instance);
+const errorHandler = (event, element, settings, instance) => {
+    const goingNative = hasStatusNative(element);
+    doneHandler(element, settings, instance);
+    addClass(element, settings.class_error);
+    setStatus(element, statusError);
+    safeCallback(settings.callback_error, element, instance);
+    if (!goingNative) checkFinish(settings, instance);
 };
 
-const revealAndUnobserve = (element, instance) => {
-	var observer = instance._observer;
-	revealElement(element, instance);
-	if (observer && instance._settings.auto_unobserve) {
-		observer.unobserve(element);
-	}
+const addOneShotEventListeners = (element, settings, instance) => {
+    const elementToListenTo = getTempImage(element) || element;
+    if (hasEventListeners(elementToListenTo)) {
+        // This happens when loading is retried twice
+        return;
+    }
+    const _loadHandler = (event) => {
+        loadHandler(event, element, settings, instance);
+        removeEventListeners(elementToListenTo);
+    };
+    const _errorHandler = (event) => {
+        errorHandler(event, element, settings, instance);
+        removeEventListeners(elementToListenTo);
+    };
+    addEventListeners(elementToListenTo, _loadHandler, _errorHandler);
 };
 
-const onExit = (element, entry, instance) => {
-	const settings = instance._settings;
-	safeCallback(settings.callback_exit, element, entry, instance);
-	if (!settings.load_delay) {
-		return;
-	}
-	cancelDelayLoad(element);
+const loadBackground = (element, settings, instance) => {
+    addTempImage(element);
+    addOneShotEventListeners(element, settings, instance);
+    setBackground(element, settings, instance);
+    setMultiBackground(element, settings, instance);
 };
 
-const cancelDelayLoad = element => {
-	var timeoutId = getTimeoutData(element);
-	if (!timeoutId) {
-		return; // do nothing if timeout doesn't exist
-	}
-	clearTimeout(timeoutId);
-	setTimeoutData(element, null);
+const loadRegular = (element, settings, instance) => {
+    addOneShotEventListeners(element, settings, instance);
+    setSources(element, settings);
+    manageLoading(element, settings, instance);
 };
 
-const delayLoad = (element, instance) => {
-	var loadDelay = instance._settings.load_delay;
-	var timeoutId = getTimeoutData(element);
-	if (timeoutId) {
-		return; // do nothing if timeout already set
-	}
-	timeoutId = setTimeout(function() {
-		revealAndUnobserve(element, instance);
-		cancelDelayLoad(element);
-	}, loadDelay);
-	setTimeoutData(element, timeoutId);
+const load = (element, settings, instance) => {
+    if (hasLoadEvent(element)) {
+        loadRegular(element, settings, instance);
+    } else {
+        loadBackground(element, settings, instance);
+    }
 };
 
-const revealElement = (element, instance, force) => {
-	var settings = instance._settings;
-	if (!force && getWasProcessedData(element)) {
-		return; // element has already been processed and force wasn't true
-	}
-	if (managedTags.indexOf(element.tagName) > -1) {
-		addOneShotEventListeners(element, instance);
-		addClass(element, settings.class_loading);
-	}
-	setSources(element, instance);
-	setWasProcessedData(element);
-	safeCallback(settings.callback_reveal, element, instance);
-	safeCallback(settings.callback_set, element, instance);
+const loadNative = (element, settings, instance) => {
+    addOneShotEventListeners(element, settings, instance);
+    setSources(element, settings);
+    removeDataAttributes(element, settings);
+    setStatus(element, statusNative);
 };
 
-const isIntersecting = entry =>
-	entry.isIntersecting || entry.intersectionRatio > 0;
+const cancelLoading = (element, entry, settings, instance) => {
+    if (!settings.cancel_on_exit) return;
+    if (!hasStatusLoading(element)) return;
+    if (element.tagName !== "IMG") return; //Works only on images
+    removeEventListeners(element);
+    resetSourcesImg(element);
+    restoreOriginalAttributesImg(element);
+    removeClass(element, settings.class_loading);
+    updateLoadingCount(instance, -1);
+    resetStatus(element);
+    safeCallback(settings.callback_cancel, element, entry, instance);
+};
 
-const getObserverSettings = settings => ({
-	root: settings.container === document ? null : settings.container,
-	rootMargin: settings.thresholds || settings.threshold + "px"
+const onEnter = (element, entry, settings, instance) => {
+    setStatus(element, statusEntered);
+    unobserveEntered(element, settings, instance);
+    safeCallback(settings.callback_enter, element, entry, instance);
+    if (hadStartedLoading(element)) return; //Prevent loading it again
+    load(element, settings, instance);
+};
+
+const onExit = (element, entry, settings, instance) => {
+    if (hasEmptyStatus(element)) return; //Ignore the first pass, at landing
+    cancelLoading(element, entry, settings, instance);
+    safeCallback(settings.callback_exit, element, entry, instance);
+};
+
+const tagsWithNativeLazy = ["IMG", "IFRAME"];
+
+const shouldUseNative = (settings) =>
+    settings.use_native && "loading" in HTMLImageElement.prototype;
+
+const loadAllNative = (elements, settings, instance) => {
+    elements.forEach((element) => {
+        if (tagsWithNativeLazy.indexOf(element.tagName) === -1) {
+            return;
+        }
+        element.setAttribute("loading", "lazy"); //TODO: Move inside the loadNative method
+        loadNative(element, settings, instance);
+    });
+    setToLoadCount(instance, 0);
+};
+
+const isIntersecting = (entry) => entry.isIntersecting || entry.intersectionRatio > 0;
+
+const getObserverSettings = (settings) => ({
+    root: settings.container === document ? null : settings.container,
+    rootMargin: settings.thresholds || settings.threshold + "px"
 });
 
-const setObserver = instance => {
-	if (!supportsIntersectionObserver) {
-		return false;
-	}
-	instance._observer = new IntersectionObserver(entries => {
-		entries.forEach(entry =>
-			isIntersecting(entry)
-				? onEnter(entry.target, entry, instance)
-				: onExit(entry.target, entry, instance)
-		);
-	}, getObserverSettings(instance._settings));
-	return true;
+const intersectionHandler = (entries, settings, instance) => {
+    entries.forEach((entry) =>
+        isIntersecting(entry)
+            ? onEnter(entry.target, entry, settings, instance)
+            : onExit(entry.target, entry, settings, instance)
+    );
 };
 
-const nativeLazyTags = ["IMG", "IFRAME"];
-
-const shouldUseNative = settings =>
-	settings.use_native && "loading" in HTMLImageElement.prototype;
-
-const loadAllNative = instance => {
-	instance._elements.forEach(element => {
-		if (nativeLazyTags.indexOf(element.tagName) === -1) {
-			return;
-		}
-		element.setAttribute("loading", "lazy");
-		revealElement(element, instance);
-	});
+const observeElements = (observer, elements) => {
+    elements.forEach((element) => {
+        observer.observe(element);
+    });
 };
 
-const nodeSetToArray = nodeSet => Array.prototype.slice.call(nodeSet);
-
-const queryElements = settings =>
-	settings.container.querySelectorAll(settings.elements_selector);
-
-const getElements = (elements, settings) =>
-	purgeProcessedElements(nodeSetToArray(elements || queryElements(settings)));
-
-const retryLazyLoad = instance => {
-	var settings = instance._settings;
-	var errorElements = settings.container.querySelectorAll(
-		"." + settings.class_error
-	);
-	[...errorElements].forEach(element => {
-		removeClass(element, settings.class_error);
-		resetWasProcessedData(element);
-	});
-	instance.update();
+const updateObserver = (observer, elementsToObserve) => {
+    resetObserver(observer);
+    observeElements(observer, elementsToObserve);
 };
 
-const setOnlineCheck = instance => {
-	if (!runningOnBrowser) {
-		return;
-	}
-	window.addEventListener("online", event => {
-		retryLazyLoad(instance);
-	});
+const setObserver = (settings, instance) => {
+    if (!supportsIntersectionObserver || shouldUseNative(settings)) {
+        return;
+    }
+    instance._observer = new IntersectionObserver((entries) => {
+        intersectionHandler(entries, settings, instance);
+    }, getObserverSettings(settings));
 };
 
-const LazyLoad = function(customSettings, elements) {
-	this._settings = getInstanceSettings(customSettings);
-	this._loadingCount = 0;
-	setObserver(this);
-	this.update(elements);
-	setOnlineCheck(this);
+const toArray = (nodeSet) => Array.prototype.slice.call(nodeSet);
+
+const queryElements = (settings) =>
+    settings.container.querySelectorAll(settings.elements_selector);
+
+const excludeManagedElements = (elements) => toArray(elements).filter(hasEmptyStatus);
+
+const hasError = (element) => hasStatusError(element);
+const filterErrorElements = (elements) => toArray(elements).filter(hasError);
+
+const getElementsToLoad = (elements, settings) =>
+    excludeManagedElements(elements || queryElements(settings));
+
+const retryLazyLoad = (settings, instance) => {
+    const errorElements = filterErrorElements(queryElements(settings));
+    errorElements.forEach(element => {
+        removeClass(element, settings.class_error);
+        resetStatus(element);
+    });
+    instance.update();
+};
+
+const setOnlineCheck = (settings, instance) => {
+    if (!runningOnBrowser) {
+        return;
+    }
+    window.addEventListener("online", () => {
+        retryLazyLoad(settings, instance);
+    });
+};
+
+const LazyLoad = function (customSettings, elements) {
+    const settings = getExtendedSettings(customSettings);
+    this._settings = settings;
+    this.loadingCount = 0;
+    setObserver(settings, this);
+    setOnlineCheck(settings, this);
+    this.update(elements);
 };
 
 LazyLoad.prototype = {
-	update: function(elements) {
-		var settings = this._settings;
-		this._elements = getElements(elements, settings);
-		if (isBot || !this._observer) {
-			this.loadAll();
-			return;
-		}
-		if (shouldUseNative(settings)) {
-			loadAllNative(this);
-			this._elements = getElements(elements, settings);
-		}
-		this._elements.forEach(element => {
-			this._observer.observe(element);
-		});
-	},
+    update: function (givenNodeset) {
+        const settings = this._settings;
+        const elementsToLoad = getElementsToLoad(givenNodeset, settings);
+        setToLoadCount(this, elementsToLoad.length);
 
-	destroy: function() {
-		if (this._observer) {
-			this._elements.forEach(element => {
-				this._observer.unobserve(element);
-			});
-			this._observer = null;
-		}
-		this._elements = null;
-		this._settings = null;
-	},
+        if (isBot || !supportsIntersectionObserver) {
+            this.loadAll(elementsToLoad);
+            return;
+        }
+        if (shouldUseNative(settings)) {
+            loadAllNative(elementsToLoad, settings, this);
+            return;
+        }
 
-	load: function(element, force) {
-		revealElement(element, this, force);
-	},
+        updateObserver(this._observer, elementsToLoad);
+    },
 
-	loadAll: function() {
-		this._elements.forEach(element => {
-			revealAndUnobserve(element, this);
-		});
-	}
+    destroy: function () {
+        // Observer
+        if (this._observer) {
+            this._observer.disconnect();
+        }
+        // Clean custom attributes on elements
+        queryElements(this._settings).forEach((element) => {
+            delete element.llOriginalAttrs;
+        });
+        // Delete all internal props
+        delete this._observer;
+        delete this._settings;
+        delete this.loadingCount;
+        delete this.toLoadCount;
+    },
+
+    loadAll: function (elements) {
+        const settings = this._settings;
+        const elementsToLoad = getElementsToLoad(elements, settings);
+        elementsToLoad.forEach((element) => {
+            unobserve(element, this);
+            load(element, settings, this);
+        });
+    }
 };
 
-/* Automatic instances creation if required (useful for async script loading) */
+LazyLoad.load = (element, customSettings) => {
+    const settings = getExtendedSettings(customSettings);
+    load(element, settings);
+};
+
+LazyLoad.resetStatus = (element) => {
+    resetStatus(element);
+};
+
+// Automatic instances creation if required (useful for async script loading)
 if (runningOnBrowser) {
-	autoInitialize(LazyLoad, window.lazyLoadOptions);
+    autoInitialize(LazyLoad, window.lazyLoadOptions);
 }
 
 export default LazyLoad;
