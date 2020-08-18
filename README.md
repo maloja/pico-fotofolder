@@ -23,7 +23,7 @@ or, if you installed Pico CMS with composer
 
 Add the following expression in your Markdown file:
 
-	(% fotofolder ( /path/to/your/images [sort] [order] %)
+	(% fotofolder ( /path/to/your/images [sort] [order]) %)
 
 Optional arguments:
 - `[sort]` Can be 'date or 'name'. This will sort the images according date, which means the exif image date not the file date, or according the filename. Default is 'name'.
@@ -33,3 +33,7 @@ Optional arguments:
 ### Caching
 
 In order to increase page loading speed for PicoFotofolder, an additional subfolder `/thumbnails` for thumbnails is automatically created in your image folder. Therefore, make sure that write rights are granted for your image folder. A hidden file ".fotofolder.dat" is also created. This file stores meta information of your images. The subfolder `/thumbnails` as well as the file" .fotofolder.dat "are created automatically and can be deleted at any time if incorrect information is displayed in the gallery.
+
+### Requirements
+
+Make sure the GD Library pgp-gd library is installed on your webserver.
