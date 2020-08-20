@@ -14,11 +14,11 @@ or clone directly from Github in `plugins/PicoFotofolder`
 
 	cd plugins
 	git clone https://github.com/maloja/pico-fotofolder
-	
+
 or, if you installed Pico CMS with composer
 
 	composer require maloja/pico-fotofolder
-	
+
 ## Usage
 
 Add the following expression in your Markdown file:
