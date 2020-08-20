@@ -23,7 +23,11 @@ or, if you installed Pico CMS with composer
 
 Add the following expression in your Markdown file:
 
+<<<<<<< HEAD
 	(% fotofolder (/path/to/your/images [sort] [order]) %)
+=======
+	(% fotofolder ( /path/to/your/images [sort] [order]) %)
+>>>>>>> cc3036d3c1b15689b24cf967dc254a32fadad1ed
 
 Optional arguments:
 - `[sort]` Can be 'date or 'name'. This will sort the images according date, which means the exif image date not the file date, or according the filename. Default is 'name'.
@@ -36,4 +40,8 @@ In order to increase page loading speed for PicoFotofolder, an additional subfol
 
 ### Requirements
 
+<<<<<<< HEAD
 Make sure the GD Library pgp-gd library is installed on your webserver.
+=======
+Make sure the GD Library pgp-gd library is installed on your webserver.
+>>>>>>> cc3036d3c1b15689b24cf967dc254a32fadad1ed
