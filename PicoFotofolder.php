@@ -37,7 +37,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
                 else {
                     list ($this->image_src['path'],
                           $this->image_src['sort'],
-                          $this->image_src['order']) = explode(',', str_replace('"', '', $match[1]));
+                          $this->image_src['order']) = array_pad(explode(',', str_replace('"', '', $match[1])), 3, null);
 
                     $this->image_src['path']  = trim($this->image_src['path']);
                     $this->image_src['sort']  = trim($this->image_src['sort']);
