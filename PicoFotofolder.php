@@ -162,7 +162,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
 	/***************************************************************/
     private function createOutput($img_metas) {
 
-        if ( $image_src['order'] == 'asc') {
+        if ( $this->image_src['order'] == 'asc') {
 		    usort($img_metas, function($a, $b) {
                 return $a[$this->image_src['sort']] <=> $b[$this->image_src['sort']];
             });
