@@ -141,7 +141,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
 
         			array_push( $img_metas, array(	'filename'   => $img,
 			                     					'url'        => $url,
-            			         					'imgname'    => $img_name,
+            			         					'name'    => $img_name,
 			                     					'date'       => $exif['FILE']['FileDateTime'],
             			         					'width'      => $width,
                      								'height'     => $height,
