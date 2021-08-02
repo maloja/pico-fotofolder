@@ -37,7 +37,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
                 else {
                     list ($this->image_src['path'],
                           $this->image_src['sort'],
-                          $this->image_src['order']) = explode(',', str_replace('"', '', $match[1]));
+                          $this->image_src['order']) = array_pad(explode(',', str_replace('"', '', $match[1])), 3, null);
 
                     $this->image_src['path']  = trim($this->image_src['path']);
                     $this->image_src['sort']  = trim($this->image_src['sort']);
@@ -141,7 +141,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
 
         			array_push( $img_metas, array(	'filename'   => $img,
 			                     					'url'        => $url,
-            			         					'imgname'    => $img_name,
+            			         					'name'    => $img_name,
 			                     					'date'       => $exif['FILE']['FileDateTime'],
             			         					'width'      => $width,
                      								'height'     => $height,
@@ -162,7 +162,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
 	/***************************************************************/
     private function createOutput($img_metas) {
 
-        if ( $image_src['order'] == 'asc') {
+        if ( $this->image_src['order'] == 'asc') {
 		    usort($img_metas, function($a, $b) {
                 return $a[$this->image_src['sort']] <=> $b[$this->image_src['sort']];
             });
