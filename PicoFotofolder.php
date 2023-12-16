@@ -27,7 +27,8 @@ class PicoFotofolder extends AbstractPicoPlugin {
      */
     public function onContentLoaded(&$rawContent) {
         $rawContent = preg_replace_callback( '/\(%\s+' . $this->p_keyword  .'\s*\(\s*(.*?)\s*\)\s+%\)/', function($match) {
-
+            // returning the input again unless an error happens.
+            $out = $match[0];
             if ($match[1]) {
 
                 //check for GD library see #1
@@ -38,27 +39,19 @@ class PicoFotofolder extends AbstractPicoPlugin {
                     list ($this->image_src['path'],
                           $this->image_src['sort'],
                           $this->image_src['order']) = explode(',', str_replace('"', '', $match[1]));
-
+                 
                     $this->image_src['path']  = trim($this->image_src['path']);
                     $this->image_src['sort']  = trim($this->image_src['sort']);
                     $this->image_src['order']  = trim($this->image_src['order']);
                     if ($this->image_src['sort'] == "") $this->image_src['sort'] = 'name';
                     if ($this->image_src['order'] == "") $this->image_src['order'] = 'dsc';
 
-    				// handle image path if %assets_url% is used see #1
+                     // handle image path if %assets_url% is used see #1
                     $this->image_src['path'] = preg_replace('/%assets_url%/', rtrim($this->getConfig('assets_url'), "/"), $this->image_src['path']);
                     $repl = '/http[s]?:\/\/' . $_SERVER['SERVER_NAME'] . '/';
                     $this->image_src['path'] = preg_replace($repl, '', $this->image_src['path']);
 
-    				$img_metas = $this->readMetaArray();
-
-    				if (count($img_metas) > 0) {
-                        $out = $this->createOutput($img_metas);
-                        $this->p_count++;
-                    }
-                    else {
-                        $out = "no media found in: {$this->image_src['path']}";
-                    }
+                    $img_metas = $this->readMetaArray();
                 }
             }
             return $out;
@@ -69,9 +62,12 @@ class PicoFotofolder extends AbstractPicoPlugin {
     /**
      * Triggered after Pico has rendered the page
      */
-    public function onPageRendered(&$output ) {
-        // add required elements in head tag
+    public function onPageRendered(&$output) {
+        $img_metas = $this->readMetaArray();
+        $this->p_count = count($img_metas);
         if ($this->p_count > 0) {
+
+            // add required elements in head tag
             $jsh  = '    <!-- Fotofolder Elements -->' . "\n";
             $jsh .= '     <link href="' . $this->getConfig('plugins_url') . 'PicoFotofolder/assets/css/fotofolder.css" rel="stylesheet">' . "\n";
             $jsh .= '     <script src="' . $this->getConfig('plugins_url') . 'PicoFotofolder/vendor/lazyload/dist/lazyload.min.js"></script>' . "\n";
@@ -79,6 +75,9 @@ class PicoFotofolder extends AbstractPicoPlugin {
             $jsh .= '     <script src="' . $this->getConfig('plugins_url') . 'PicoFotofolder/vendor/baguettebox/dist/baguetteBox.min.js"></script>' . "\n";
 			$jsh .= '</head>' . "\n" . '<body>' . "\n";
             $output = preg_replace('/\\<\\/head\\>\s*\n\s*\\<body\\>/', $jsh, $output, 1);
+
+            // add photofolder to page
+            $output = preg_replace('/\(%\s+' . $this->p_keyword  .'.*?\s%\)/', $this->createOutput($img_metas), $output, 1);
 
             // Add LazyLoad
             $jsh  = '<script>' . "\n";
@@ -89,6 +88,8 @@ class PicoFotofolder extends AbstractPicoPlugin {
             $jsh .= '</script>' . "\n";
             $jsh .= '</body>' . "\n" . '</html>' . "\n";
             $output = preg_replace('/\\<\\/body\\>\s*\n\s*\\<\/html\\>/', $jsh, $output, 1);
+        } else {
+            $output = preg_replace('/\(%\s+' . $this->p_keyword  .'.*?\s%\)/', "no media found in: {$this->image_src['path']}", $output, 1);
         }
     }
 
@@ -162,7 +163,7 @@ class PicoFotofolder extends AbstractPicoPlugin {
 	/***************************************************************/
     private function createOutput($img_metas) {
 
-        if ( $image_src['order'] == 'asc') {
+        if ( $this->image_src['order'] == 'asc') {
 		    usort($img_metas, function($a, $b) {
                 return $a[$this->image_src['sort']] <=> $b[$this->image_src['sort']];
             });
