@@ -105,7 +105,11 @@ class PicoFotofolder extends AbstractPicoPlugin {
         $img_metas = array();
         $pattern = '{,.}*.{[jJ][pP][gG],[jJ][pP][eE][gG],[pP][nN][gG],[gG][iI][fF],dat}';
         $filelist = glob($dir . '/' . $pattern, GLOB_BRACE);
-		usort($filelist, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
+        
+        $timeCompareFunction = function($a, $b) {
+            return filemtime($b) - filemtime($a);
+        };
+		usort($filelist, $timeCompareFunction);
 
  		//check if metafile is still up to date or if we have to create a new one
 		if (strpos($filelist[0], '.fotofolder.dat') == true) {
