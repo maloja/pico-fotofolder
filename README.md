@@ -23,7 +23,10 @@ or, if you installed Pico CMS with composer
 
 Add the following expression in your Markdown file:
 
-	(% fotofolder (/path/to/your/images [sort] [order]) %)
+	(% fotofolder (/path/to/your/images, [sort], [order]) %)
+	
+	E.g. 
+	(% fotofolder (/assets/gallery, date, dsc) %)
 
 Optional arguments:
 - `[sort]` Can be 'date or 'name'. This will sort the images according date, which means the exif image date not the file date, or according the filename. Default is 'name'.
