@@ -1,3 +1,7 @@
+# !!! End Of Life Notice !!!
+
+The further development of PicoCMS was discontinued a long time ago. This means that also this project has come to its end. The repository “maloja/pico-leaflet” will be removed in the near future. If you would like to continue using any useful lines of code from this repository, please copy them into your own project.
+
 # PicoFotofolder
 
 A masonry like gallery for [Pico CMS](http://picocms.org) including a fullscreen and lazyload capabilities. It will display all images within a folder as a gallery. It is based on the two small "vanilla" JavaScripts [baguetteBox](https://github.com/feimosi/baguetteBox.js) and [Lazyload](https://github.com/verlok/lazyload).
